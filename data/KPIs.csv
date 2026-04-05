@@ -1,0 +1,11 @@
+kpi_name,description
+avg_total_distance,Average total distance per session
+avg_sprint_distance,Average sprint distance per session
+total_high_intensity,Total high intensity efforts over a period
+distance_per_minute,Total distance divided by session duration
+fatigue_trend,Change in fatigue score over time
+sleep_quality_avg,Average sleep score over time
+match_vs_training_distance,Difference in distance between match and training sessions
+position_sprint_profile,Average sprint distance grouped by position
+team_total_load,Total distance aggregated at team level
+high_intensity_rate,High intensity efforts per minute

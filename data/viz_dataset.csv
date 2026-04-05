@@ -1,0 +1,19 @@
+athlete,week,total_distance,sprint_distance,fatigue
+James Smith,Week1,20500,2700,30
+James Smith,Week2,22000,2900,45
+James Smith,Week3,23000,3100,50
+Liam Johnson,Week1,18900,2200,35
+Liam Johnson,Week2,20000,2400,40
+Liam Johnson,Week3,21000,2600,42
+Noah Williams,Week1,18000,1800,40
+Noah Williams,Week2,19000,2000,48
+Noah Williams,Week3,19500,2100,52
+Oliver Brown,Week1,21000,2800,32
+Oliver Brown,Week2,22500,3000,38
+Oliver Brown,Week3,24000,3200,44
+Elijah Jones,Week1,19500,2300,36
+Elijah Jones,Week2,20500,2500,41
+Elijah Jones,Week3,21500,2700,46
+William Garcia,Week1,18500,1900,42
+William Garcia,Week2,19500,2100,48
+William Garcia,Week3,20000,2200,55

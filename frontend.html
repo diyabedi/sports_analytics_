@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apollo MIS — Performance Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #080c12;
+    --bg2:       #0e1420;
+    --bg3:       #141c2b;
+    --border:    #1e2d44;
+    --border2:   #243550;
+    --cyan:      #00e5ff;
+    --cyan-dim:  #00b8cc;
+    --cyan-glow: rgba(0,229,255,0.12);
+    --green:     #00ff88;
+    --amber:     #ffb020;
+    --red:       #ff4757;
+    --text:      #e2e8f4;
+    --text2:     #8899bb;
+    --text3:     #445577;
+    --mono:      'DM Mono', monospace;
+    --head:      'Barlow Condensed', sans-serif;
+    --body:      'Figtree', sans-serif;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 60px;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-family: var(--head); font-size: 22px; font-weight: 800; letter-spacing: 0.04em; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+  .logo-sub { font-size: 11px; font-weight: 400; color: var(--text2); letter-spacing: 0.12em; margin-top: 2px; }
+  .status-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--text2); background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-dot.ok   { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.warn { background: var(--amber); }
+
+  main { display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+
+  sidebar {
+    background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow-y: auto;
+    padding: 24px 16px; gap: 24px;
+  }
+  .sidebar-label { font-family: var(--head); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: var(--text3); text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+  .question-chip { width: 100%; padding: 10px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text2); font-family: var(--body); font-size: 12.5px; text-align: left; cursor: pointer; transition: all 0.15s ease; line-height: 1.4; }
+  .question-chip:hover { background: var(--cyan-glow); border-color: var(--cyan-dim); color: var(--cyan); }
+
+  .content { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg); }
+
+  .query-bar { padding: 24px 32px 20px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .query-label { font-family: var(--head); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+  .query-row { display: flex; gap: 10px; align-items: stretch; }
+
+  .query-input { flex: 1; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 14px 18px; color: var(--text); font-family: var(--body); font-size: 15px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  .query-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-glow); }
+  .query-input::placeholder { color: var(--text3); }
+
+  /* ── MIC BUTTON ────────────────────────────────────────────────── */
+  .mic-btn {
+    width: 50px; flex-shrink: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .mic-btn:hover { border-color: var(--cyan-dim); background: var(--cyan-glow); }
+  .mic-btn.recording {
+    border-color: var(--red);
+    background: rgba(255,71,87,0.12);
+    animation: mic-pulse 1s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,71,87,0.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(255,71,87,0); }
+  }
+  .mic-icon { width: 22px; height: 22px; }
+
+  /* Voice Status */
+  .voice-tag { display: none; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-family: var(--mono); }
+  .voice-tag.show     { display: flex; }
+  .voice-tag.listening { color: var(--red); }
+  .voice-tag.done      { color: var(--green); }
+  .voice-tag.error     { color: var(--amber); }
+  .blink { animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .no-support { display: none; font-size: 11px; color: var(--amber); font-family: var(--mono); margin-top: 6px; }
+
+  .run-btn { padding: 0 28px; background: var(--cyan); color: var(--bg); font-family: var(--head); font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border: none; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
+  .run-btn:hover:not(:disabled) { background: #33eeff; box-shadow: 0 0 20px rgba(0,229,255,.3); }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 60px 40px; text-align: center; }
+  .empty-icon { width: 64px; height: 64px; border: 2px solid var(--border2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 4px; background: var(--bg2); }
+  .empty-title { font-family: var(--head); font-size: 22px; font-weight: 700; color: var(--text2); }
+  .empty-sub { font-size: 13px; color: var(--text3); max-width: 320px; line-height: 1.6; }
+  .empty-sub em { color: var(--cyan); font-style: normal; }
+
+  .result-area { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+  .pipeline { display: flex; }
+  .pipeline-step { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--border); background: var(--bg2); font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .pipeline-step:first-child { border-radius: 8px 0 0 8px; }
+  .pipeline-step:last-child  { border-radius: 0 8px 8px 0; }
+  .pipeline-step + .pipeline-step { border-left: none; }
+  .pipeline-step.done { color: var(--cyan); border-color: var(--cyan-dim); background: var(--cyan-glow); }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .card-title  { font-family: var(--head); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+  .card-badge  { font-size: 10px; padding: 2px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text3); font-family: var(--mono); }
+  .card-body   { padding: 16px 18px; }
+
+  .kpi-list { display: flex; flex-direction: column; gap: 8px; }
+  .kpi-row  { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  .kpi-name { font-family: var(--mono); font-size: 12px; color: var(--cyan); min-width: 200px; }
+  .kpi-desc { font-size: 12px; color: var(--text2); flex: 1; }
+  .kpi-bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 2px; }
+  .kpi-bar  { height: 100%; background: var(--cyan); border-radius: 2px; transition: width .5s ease; }
+  .kpi-score { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+  .sql-block { background: var(--bg); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.8; color: #a8b8d8; overflow-x: auto; white-space: pre; }
+  .sql-kw { color: #7eb6ff; } .sql-fn { color: #f0b040; } .sql-str { color: #88d88f; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--bg3); }
+  thead th { padding: 10px 14px; text-align: left; font-family: var(--head); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody td { padding: 10px 14px; color: var(--text); }
+  tbody td.num { font-family: var(--mono); font-size: 12px; color: var(--cyan); }
+  .row-count { padding: 10px 14px; font-size: 12px; color: var(--text3); font-family: var(--mono); border-top: 1px solid var(--border); }
+
+  .chart-img { width: 100%; border-radius: 8px; display: block; max-height: 420px; object-fit: contain; background: #fff; }
+
+  .error-box { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: rgba(255,71,87,.08); border: 1px solid rgba(255,71,87,.25); border-radius: 8px; font-size: 13px; color: var(--red); font-family: var(--mono); }
+
+  .loading-overlay { display: flex; align-items: center; gap: 12px; padding: 20px 0; font-family: var(--mono); font-size: 13px; color: var(--text2); }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } main { grid-template-columns: 1fr; } sidebar { display: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <div>
+        <div>APOLLO MIS</div>
+        <div class="logo-sub">PERFORMANCE INTELLIGENCE</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot ok" id="statusDot"></div>
+      <span id="statusText">SYSTEM READY</span>
+    </div>
+  </header>
+
+  <main>
+    <sidebar>
+      <div>
+        <div class="sidebar-label">Example Questions</div>
+        <div id="chipList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div>
+        <div class="sidebar-label">How it works</div>
+        <div style="font-size:12px;color:var(--text3);padding:0 8px;line-height:1.9;">
+          <span style="color:var(--cyan)">①</span> Voice or text input<br>
+          <span style="color:var(--cyan)">②</span> KPI matched via TF-IDF<br>
+          <span style="color:var(--cyan)">③</span> SQL written by Claude AI<br>
+          <span style="color:var(--cyan)">④</span> Query runs on SQLite DB<br>
+          <span style="color:var(--cyan)">⑤</span> Best chart auto-selected
+        </div>
+      </div>
+    </sidebar>
+
+    <div class="content">
+      <div class="query-bar">
+        <div class="query-label">Ask a question — type or speak</div>
+        <div class="query-row">
+
+          <input
+            type="text" id="questionInput" class="query-input"
+            placeholder="e.g. Who had the highest sprint distance?"
+          />
+
+          <!-- MIC BUTTON -->
+          <button class="mic-btn" id="micBtn" title="Click to speak" onclick="toggleVoice()">
+            <svg class="mic-icon" viewBox="0 0 24 24" fill="none">
+              <!-- microphone body -->
+              <rect id="micBody" x="9" y="2" width="6" height="11" rx="3" fill="#8899bb"/>
+              <!-- mic base arc -->
+              <path id="micArc" d="M5 11a7 7 0 0 0 14 0" stroke="#8899bb" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <!-- mic stand -->
+              <line x1="12" y1="18" x2="12" y2="21" stroke="#8899bb" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="9" y1="21" x2="15" y2="21" stroke="#8899bb" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="run-btn" id="runBtn" onclick="runQuery()">Run →</button>
+        </div>
+
+        <!-- Voice feedback line -->
+        <div class="voice-tag" id="voiceTag">
+          <span id="voiceIcon">●</span>&nbsp;
+          <span id="voiceText"></span>
+        </div>
+        <div class="no-support" id="noSupportMsg">
+          ⚠ Voice input needs Chrome or Edge. Typing still works.
+        </div>
+      </div>
+
+      <div id="resultArea">
+        <div class="empty-state">
+          <div class="empty-icon">⚡</div>
+          <div class="empty-title">Ready for your query</div>
+          <div class="empty-sub">
+            Type a question, click a chip on the left, or hit the
+            <em>mic button</em> and speak — the full RAG pipeline runs automatically.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// VOICE TO TEXT
+// Uses the Web Speech API — built into Chrome/Edge, free, no key.
+// Audio goes to Google's servers for transcription, text comes back.
+// ─────────────────────────────────────────────────────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording  = false;
+
+function initSpeech() {
+  if (!SpeechRecognition) {
+    document.getElementById('noSupportMsg').style.display = 'block';
+    document.getElementById('micBtn').style.display = 'none';
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang            = 'en-US';
+  recognition.continuous      = false;  // stop after one sentence
+  recognition.interimResults  = false;  // wait for final result only
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const confidence = Math.round(e.results[0][0].confidence * 100);
+    document.getElementById('questionInput').value = transcript;
+    setVoiceState('done', `"${transcript}" — ${confidence}% confidence`);
+    stopRecording();
+    setTimeout(runQuery, 500);  // auto-submit after short pause
+  };
+
+  recognition.onerror = (e) => {
+    const msg = {
+      'not-allowed':   'Mic access denied — allow it in browser settings.',
+      'no-speech':     'Nothing heard. Try again.',
+      'network':       'Network error during transcription.',
+      'audio-capture': 'No microphone found.',
+    }[e.error] || `Error: ${e.error}`;
+    setVoiceState('error', msg);
+    stopRecording();
+  };
+
+  recognition.onend = () => { if (isRecording) stopRecording(); };
+}
+
+function toggleVoice() {
+  if (!recognition) return;
+  isRecording ? stopRecording() : startRecording();
+}
+
+function startRecording() {
+  isRecording = true;
+  recognition.start();
+  document.getElementById('micBtn').classList.add('recording');
+  setMicColor('#ff4757');
+  setVoiceState('listening', 'Listening — speak your question now…');
+}
+
+function stopRecording() {
+  isRecording = false;
+  try { recognition.stop(); } catch(e) {}
+  document.getElementById('micBtn').classList.remove('recording');
+  setMicColor('#8899bb');
+}
+
+function setMicColor(color) {
+  document.getElementById('micBody').setAttribute('fill', color);
+  document.getElementById('micArc').setAttribute('stroke', color);
+  document.querySelectorAll('.mic-icon line').forEach(l => l.setAttribute('stroke', color));
+}
+
+function setVoiceState(state, text) {
+  const tag  = document.getElementById('voiceTag');
+  const icon = document.getElementById('voiceIcon');
+  const msg  = document.getElementById('voiceText');
+  tag.className = 'voice-tag show ' + state;
+  msg.textContent = text;
+  icon.className = '';
+  if (state === 'listening') { icon.textContent = '●'; icon.classList.add('blink'); }
+  else if (state === 'done') icon.textContent = '✓';
+  else icon.textContent = '⚠';
+  if (state === 'done') setTimeout(() => { tag.className = 'voice-tag'; }, 5000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PIPELINE RUNNER
+// ─────────────────────────────────────────────────────────────────
+async function runQuery() {
+  const question = document.getElementById('questionInput').value.trim();
+  if (!question) return;
+  document.getElementById('runBtn').disabled = true;
+
+  const area = document.getElementById('resultArea');
+  area.innerHTML = `<div class="result-area"><div class="loading-overlay"><div class="spinner"></div><span id="loadMsg">Running pipeline…</span></div></div>`;
+
+  const msgs = ['Matching KPIs…','Generating SQL with Claude…','Running query…','Rendering chart…'];
+  let i = 0;
+  const ticker = setInterval(() => {
+    const el = document.getElementById('loadMsg');
+    if (el && i < msgs.length) el.textContent = msgs[i++];
+  }, 1800);
+
+  try {
+    const resp = await fetch('/query', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    clearInterval(ticker);
+    renderResult(await resp.json());
+  } catch(e) {
+    clearInterval(ticker);
+    area.innerHTML = `<div class="result-area"><div class="error-box">⚠ Server not reachable. Is uvicorn running?</div></div>`;
+  }
+
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RENDER RESULT
+// ─────────────────────────────────────────────────────────────────
+function hl(sql) {
+  ['SELECT','FROM','WHERE','JOIN','ON','GROUP BY','ORDER BY','HAVING','LIMIT','WITH',
+   'AS','AND','OR','BY','DISTINCT','CASE','WHEN','THEN','ELSE','END','INTERVAL',
+   'DATE','CURRENT_DATE','LEFT','RIGHT','INNER'].forEach(k => {
+    sql = sql.replace(new RegExp(`\\b${k}\\b`,'g'), `<span class="sql-kw">${k}</span>`);
+  });
+  ['COUNT','SUM','AVG','MIN','MAX','ROUND'].forEach(f => {
+    sql = sql.replace(new RegExp(`\\b${f}\\b`,'g'), `<span class="sql-fn">${f}</span>`);
+  });
+  return sql.replace(/'[^']*'/g, m => `<span class="sql-str">${m}</span>`);
+}
+
+function isNum(v) { return v !== null && v !== '' && !isNaN(Number(v)); }
+
+function renderResult(data) {
+  const steps = data.steps || [];
+  const area  = document.getElementById('resultArea');
+
+  const pipe = ['KPI Match','SQL Gen','Execute','Visualize']
+    .map((l,i) => {
+      const id = ['kpi_retrieval','sql_generation','sql_execution','visualization'][i];
+      const done = steps.includes(id);
+      return `<div class="pipeline-step ${done?'done':''}">${done?'✓':'○'} ${l}</div>`;
+    }).join('');
+
+  if (data.error) {
+    area.innerHTML = `<div class="result-area"><div class="pipeline">${pipe}</div><div class="error-box">⚠ ${data.error}</div></div>`;
+    return;
+  }
+
+  const kpiHTML = data.kpi_matches?.length ? `
+    <div class="card">
+      <div class="card-header"><div class="card-title">🔍 KPI Retrieval <span class="card-badge">${data.kpi_matches.length} matched</span></div></div>
+      <div class="card-body"><div class="kpi-list">${data.kpi_matches.map(m=>`
+        <div class="kpi-row">
+          <div class="kpi-name">${m.name}</div>
+          <div class="kpi-desc">${m.description}</div>
+          <div class="kpi-bar-wrap"><div class="kpi-bar" style="width:${Math.min(100,m.score*300)}%"></div></div>
+          <div class="kpi-score">${m.score.toFixed(2)}</div>
+        </div>`).join('')}</div></div>
+    </div>` : '';
+
+  const sqlHTML = data.sql ? `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🤖 Generated SQL</div>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('sqlB').innerText)" style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:4px 10px;cursor:pointer;font-family:var(--mono)">Copy</button>
+      </div>
+      <div style="padding:0"><div class="sql-block" id="sqlB">${hl(data.sql)}</div></div>
+    </div>` : '';
+
+  const tableHTML = data.columns?.length ? `
+    <div class="card">
+      <div class="card-header"><div class="card-title">⚡ Results <span class="card-badge">${data.row_count} rows</span></div></div>
+      <div style="padding:0">
+        <div class="table-wrap"><table>
+          <thead><tr>${data.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+          <tbody>${data.rows.slice(0,50).map(r=>`<tr>${r.map(c=>`<td class="${isNum(c)?'num':''}">${c??'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table></div>
+        ${data.row_count>50?`<div class="row-count">Showing 50 of ${data.row_count} rows</div>`:''}
+      </div>
+    </div>` : '';
+
+  const chartHTML = data.chart_url ? `
+    <div class="card">
+      <div class="card-header"><div class="card-title">📊 Visualization</div></div>
+      <div class="card-body"><img class="chart-img" src="${data.chart_url}?t=${Date.now()}" /></div>
+    </div>` : '';
+
+  const mid = (sqlHTML && tableHTML) ? `<div class="grid2">${sqlHTML}${tableHTML}</div>` : sqlHTML + tableHTML;
+  area.innerHTML = `<div class="result-area"><div class="pipeline">${pipe}</div>${kpiHTML}${mid}${chartHTML}</div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────
+async function loadSuggestions() {
+  try {
+    const d = await (await fetch('/suggest')).json();
+    const list = document.getElementById('chipList');
+    d.questions.forEach(q => {
+      const b = document.createElement('button');
+      b.className = 'question-chip'; b.textContent = q;
+      b.onclick = () => { document.getElementById('questionInput').value = q; runQuery(); };
+      list.appendChild(b);
+    });
+  } catch(e) {}
+}
+
+async function checkHealth() {
+  try {
+    const d = await (await fetch('/health')).json();
+    const ok = d.sql_generation === 'enabled';
+    document.getElementById('statusDot').className = 'status-dot ' + (ok?'ok':'warn');
+    document.getElementById('statusText').textContent = ok ? 'SYSTEM READY' : 'NO API KEY';
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSpeech();
+  loadSuggestions();
+  checkHealth();
+  document.getElementById('questionInput').addEventListener('keydown', e => { if(e.key==='Enter') runQuery(); });
+});
+</script>
+</body>
+</html>

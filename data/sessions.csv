@@ -1,0 +1,13 @@
+session_id,athlete_id,session_date,duration_minutes,session_type
+101,1,1/1/2026,75,Training
+102,2,1/1/2026,80,Training
+103,3,1/1/2026,70,Training
+104,1,1/5/2026,90,Match
+105,2,1/5/2026,85,Match
+106,3,1/5/2026,88,Match
+107,4,1/1/2026,78,Training
+108,5,1/1/2026,82,Training
+109,6,1/1/2026,74,Training
+110,4,1/5/2026,92,Match
+111,5,1/5/2026,87,Match
+112,6,1/5/2026,89,Match
