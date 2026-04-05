@@ -1,7 +1,5 @@
 # Apollo MIS — RAG Sports Performance System
 
-**RAG Internship Assessment | Diya**
-
 A working end-to-end pipeline that takes a natural language question
 about athlete performance and returns a structured answer and chart.
 
@@ -58,7 +56,7 @@ apollo_rag_system/
 pip install -r requirements.txt
 ```
 
-### 2. Set your Anthropic API key
+### 2. Set your Anthropic/GROQ API key
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
